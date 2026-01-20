@@ -12,40 +12,43 @@ router.post('/', async (req, res) => {
         const nuevoContacto = new Contact(req.body);
         savedData = await nuevoContacto.save();
     } catch (error) {
-        // Si hay un error, lo registramos pero no detenemos el proceso del email
         console.error("❌ Error al guardar en DB:", error.message);
-        dbError = true;
         
-        // Si el error es de validación (datos mal escritos), ahí sí es mejor avisar al usuario
+        // Si el error es de validación (datos obligatorios faltantes), detenemos y avisamos
         if (error.name === 'ValidationError') {
             const mensajes = Object.values(error.errors).map(val => val.message);
-            return res.status(400).json({ success: false, detalles: mensajes });
+            return res.status(400).json({ success: false, errores: mensajes });
         }
+        
+        // Para otros errores (conexión DB), marcamos la bandera para avisar en el mail
+        dbError = true;
     }
 
-    // 2. DISPARAR EMAIL (Ocurre siempre, a menos que sea un error de validación previo)
-    // Agregamos una nota al mail si hubo error en DB para que tú lo sepas
-    const dataConEstado = { 
+    // 2. PREPARAR DATA PARA EMAIL
+    // Usamos el número formateado para que en el mail que recibes sea fácil de leer
+    const dataParaEmail = { 
         ...req.body, 
-        avisoSistema: dbError ? "⚠️ ATENCIÓN: Este contacto NO se pudo guardar en la base de datos, solo se envió por email." : "✅ Guardado correctamente en MongoDB."
+        avisoSistema: dbError 
+            ? "⚠️ ATENCIÓN: No se pudo guardar en MongoDB. Solo se envió por email." 
+            : "✅ Registro guardado correctamente en la base de datos."
     };
 
-    sendContactNotification(dataConEstado).catch(err => 
-        console.error("Falla crítica: No se pudo enviar el mail ni guardar en DB", err)
+    // Disparar email en segundo plano
+    sendContactNotification(dataParaEmail).catch(err => 
+        console.error("Falla crítica en servicio de email:", err)
     );
 
     // 3. RESPUESTA AL CLIENTE
     if (dbError) {
-        // Si no se guardó en DB pero el mail salió, damos una respuesta de "éxito parcial"
         return res.status(202).json({ 
             success: true, 
-            mensaje: 'Recibimos tu mensaje, pero hubo un inconveniente técnico interno. Te contactaremos pronto.' 
+            mensaje: 'Mensaje recibido. Procesando solicitud por vías alternativas.' 
         });
     }
 
     res.status(201).json({ 
         success: true, 
-        mensaje: 'Lead capturado y notificado correctamente',
+        mensaje: 'Contacto procesado con éxito',
         data: savedData 
     });
 });

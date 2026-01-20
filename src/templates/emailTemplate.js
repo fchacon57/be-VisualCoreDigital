@@ -23,7 +23,7 @@ const contactEmailTemplate = (data) => {
           <p style="margin: 10px 0;"><strong>👤 Nombre:</strong> ${nombre}</p>
           <p style="margin: 10px 0;"><strong>📧 Email:</strong> ${email}</p>
           <p style="margin: 10px 0;"><strong>🏢 Empresa:</strong> ${empresa || 'No especificada'}</p>
-          <p style="margin: 10px 0;"><strong>📞 Teléfono:</strong> +${telefono.codigoPais} ${telefono.prefijo} ${telefono.numero}</p>
+          <p style="margin: 10px 0;"><strong>📞 Teléfono:</strong> ${telefono.formateado}</p>
           
           <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #002b5c;">
             <p style="margin-top: 0; font-weight: bold; color: #002b5c;">📝 Descripción del Proyecto:</p>
