@@ -9,4 +9,4 @@ COPY . .
 # Exponemos el puerto 5000 que es el del backend
 EXPOSE 5000
 
-CMD ["node", "src/server.js"]
+CMD ["npm", "run", "dev"]

@@ -18,7 +18,7 @@ app.use(helmet());
 const allowedOrigins = [
   'http://localhost:3000', // React (Create React App)
   'http://localhost:5173', // React (Vite)
-  'https://www.visualcore.cl' // Tu futuro dominio real
+   process.env.FRONTEND_URL // Tu futuro dominio real
 ];
 
 const corsOptions = {
@@ -58,7 +58,9 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Conectado a MongoDB (Base de datos segura)'))
   .catch(err => console.error('❌ Error de conexión:', err));
 
-// Ruta de salud de la API
+console.log("Conexión mongodb en vivo activada");  
+
+  // Ruta de salud de la API
 app.get('/', (req, res) => {
   res.status(200).json({ mensaje: 'API de Visual Core Digital funcionando y protegida' });
 });
