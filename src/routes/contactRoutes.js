@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Contact = require('../models/Contact');
-const { sendContactNotification } = require('../services/mailService');
+const axios = require('axios'); // <-- Ahora usamos axios para comunicarnos
 
 router.post('/', async (req, res) => {
     let dbError = false;
@@ -14,18 +14,15 @@ router.post('/', async (req, res) => {
     } catch (error) {
         console.error("❌ Error al guardar en DB:", error.message);
         
-        // Si el error es de validación (datos obligatorios faltantes), detenemos y avisamos
         if (error.name === 'ValidationError') {
             const mensajes = Object.values(error.errors).map(val => val.message);
             return res.status(400).json({ success: false, errores: mensajes });
         }
         
-        // Para otros errores (conexión DB), marcamos la bandera para avisar en el mail
         dbError = true;
     }
 
-    // 2. PREPARAR DATA PARA EMAIL
-    // Usamos el número formateado para que en el mail que recibes sea fácil de leer
+    // 2. PREPARAR DATA Y LLAMAR AL MICROSERVICIO
     const dataParaEmail = { 
         ...req.body, 
         avisoSistema: dbError 
@@ -33,10 +30,17 @@ router.post('/', async (req, res) => {
             : "✅ Registro guardado correctamente en la base de datos."
     };
 
-    // Disparar email en segundo plano
-    sendContactNotification(dataParaEmail).catch(err => 
-        console.error("Falla crítica en servicio de email:", err)
-    );
+    /**
+     * DISPARAR NOTIFICACIÓN AL MICROSERVICIO
+     * Importante: Usamos la URL del microservicio (puerto 5001)
+     */
+    axios.post('http://ms-notifications:5001/api/notify', dataParaEmail)
+        .then(response => {
+            console.log("✅ Respuesta del Microservicio:", response.data.message);
+        })
+        .catch(err => {
+            console.error("⚠️ El Microservicio de Notificaciones no respondió:", err.message);
+        });
 
     // 3. RESPUESTA AL CLIENTE
     if (dbError) {
