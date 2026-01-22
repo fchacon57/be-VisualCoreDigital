@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Contact = require('../models/Contact');
 const axios = require('axios'); // <-- Ahora usamos axios para comunicarnos
+const MS_URL = process.env.MS_NOTIFICATIONS_URL;
 
 router.post('/', async (req, res) => {
     let dbError = false;
@@ -34,7 +35,7 @@ router.post('/', async (req, res) => {
      * DISPARAR NOTIFICACIÓN AL MICROSERVICIO
      * Importante: Usamos la URL del microservicio (puerto 5001)
      */
-    axios.post('http://ms-notifications:5001/api/notify', dataParaEmail)
+    await axios.post(`${MS_URL}/api/notify`, dataParaEmail)
         .then(response => {
             console.log("✅ Respuesta del Microservicio:", response.data.message);
         })
