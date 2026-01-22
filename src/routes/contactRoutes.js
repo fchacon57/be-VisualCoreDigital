@@ -35,7 +35,8 @@ router.post('/', async (req, res) => {
      * DISPARAR NOTIFICACIÓN AL MICROSERVICIO
      * Importante: Usamos la URL del microservicio (puerto 5001)
      */
-    await axios.post(`${MS_URL}/api/notify`, dataParaEmail)
+// Añade un timeout de 10 segundos
+    await axios.post(`${MS_URL}/api/notify`, dataParaEmail, { timeout: 10000 })
         .then(response => {
             console.log("✅ Respuesta del Microservicio:", response.data.message);
         })
