@@ -9,21 +9,22 @@ const contactRoutes = require('./routes/contactRoutes');
 
 const app = express();
 
+// --- NUEVA CONFIGURACIÓN: CONFIAR EN EL PROXY DE RENDER ---
+// Esto soluciona el error ValidationError de express-rate-limit en Render
+app.set('trust proxy', 1); 
+
 // --- 1. CONFIGURACIÓN DE SEGURIDAD (Helmet) ---
-// Protege tu app de vulnerabilidades web conocidas configurando cabeceras HTTP
 app.use(helmet());
 
 // --- 2. CONFIGURACIÓN DE CORS ---
-// Solo permitimos que tu Frontend (en desarrollo o producción) acceda a la API
 const allowedOrigins = [
-  'http://localhost:3000', // React (Create React App)
-  'http://localhost:5173', // React (Vite)
-   process.env.FRONTEND_URL // Tu futuro dominio real
+  'http://localhost:3000',
+  'http://localhost:5173',
+  process.env.FRONTEND_URL
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Permitimos peticiones sin origen (como Postman) o si están en la lista blanca
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -35,11 +36,10 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// --- 3. CONFIGURACIÓN DE RATE LIMIT (Protección anti-spam) ---
-// Evita que una misma IP sature el formulario enviando demasiados mensajes
+// --- 3. CONFIGURACIÓN DE RATE LIMIT ---
 const contactLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // Ventana de 15 minutos
-  max: 5, // Límite de 5 mensajes por IP cada 15 minutos
+  windowMs: 15 * 60 * 1000, 
+  max: 5, 
   message: {
     success: false,
     error: 'Demasiados intentos. Por seguridad, intenta de nuevo en 15 minutos.'
@@ -47,10 +47,9 @@ const contactLimiter = rateLimit({
 });
 
 // --- 4. MIDDLEWARES DE PARSEO ---
-app.use(express.json()); // Permite recibir y entender JSON en las peticiones
+app.use(express.json());
 
 // --- 5. RUTAS ---
-// Aplicamos el limitador específicamente a la ruta de contacto
 app.use('/api/contacto', contactLimiter, contactRoutes);
 
 // --- 6. CONEXIÓN A MONGODB ---
@@ -58,9 +57,6 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Conectado a MongoDB (Base de datos segura)'))
   .catch(err => console.error('❌ Error de conexión:', err));
 
-console.log("Conexión mongodb en vivo activada");  
-
-  // Ruta de salud de la API
 app.get('/', (req, res) => {
   res.status(200).json({ mensaje: 'API de Visual Core Digital funcionando y protegida' });
 });
