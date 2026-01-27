@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Contact = require('../models/Contact');
-const axios = require('axios'); // <-- Ahora usamos axios para comunicarnos
+const axios = require('axios'); 
 const MS_URL = process.env.MS_NOTIFICATIONS_URL;
 
 router.post('/', async (req, res) => {
@@ -33,16 +33,20 @@ router.post('/', async (req, res) => {
 
     /**
      * DISPARAR NOTIFICACIÓN AL MICROSERVICIO
-     * Importante: Usamos la URL del microservicio (puerto 5001)
+     * Subimos el timeout a 45 segundos para dar tiempo a que Render despierte el servicio.
      */
-// Añade un timeout de 10 segundos
-    await axios.post(`${MS_URL}/api/notify`, dataParaEmail, { timeout: 10000 })
-        .then(response => {
-            console.log("✅ Respuesta del Microservicio:", response.data.message);
-        })
-        .catch(err => {
-            console.error("⚠️ El Microservicio de Notificaciones no respondió:", err.message);
+    try {
+        const response = await axios.post(`${MS_URL}/api/notify`, dataParaEmail, { 
+            timeout: 45000 // 45 segundos (tiempo recomendado para servicios 'free' de Render)
         });
+        console.log("✅ Respuesta del Microservicio:", response.data.message);
+    } catch (err) {
+        // Log detallado para identificar si fue timeout (dormido) o error de URL
+        const errorMsg = err.code === 'ECONNABORTED' 
+            ? "Timeout excedido (El MS tardó mucho en despertar)" 
+            : err.message;
+        console.error("⚠️ El Microservicio de Notificaciones no respondió:", errorMsg);
+    }
 
     // 3. RESPUESTA AL CLIENTE
     if (dbError) {
